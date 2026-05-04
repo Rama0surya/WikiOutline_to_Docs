@@ -1,0 +1,26 @@
+# version: '3.8'
+networks:
+  web-network:
+    external: true
+services:
+  outline-exporter:
+    build: .
+    container_name: outline-exporter
+    restart: unless-stopped
+    # ports:
+    #   - "3002:3002"
+    environment:
+      - PORT=3002
+      - NODE_ENV=production
+    # deploy:
+    #   resources:
+    #     limits:
+    #       memory: 512m
+    #       cpus: '0.5'
+    networks:
+      - web-network
+
+
+
+
+

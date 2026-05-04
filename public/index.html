@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Outline Exporter</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root { --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+.page { min-height: 100vh; background: #f5f4f0; display: flex; flex-direction: column; align-items: center; padding: 2.5rem 1rem 3rem; }
+.logo-row { display: flex; align-items: center; gap: 10px; margin-bottom: 2rem; }
+.logo-icon { width: 36px; height: 36px; background: #1a1a1a; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+.logo-icon svg { width: 18px; height: 18px; fill: white; }
+.logo-text { font-family: var(--font-sans); font-size: 15px; font-weight: 500; color: #1a1a1a; }
+.logo-sub { font-size: 12px; color: #888; }
+.card { background: #fff; border-radius: 16px; border: 1px solid #e8e6e0; padding: 1.75rem; width: 100%; max-width: 520px; margin-bottom: 1rem; }
+.card-title { font-size: 11px; font-weight: 500; color: #888; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 1.25rem; font-family: var(--font-sans); }
+.field { margin-bottom: 1rem; }
+.field label { font-size: 12px; color: #888; display: block; margin-bottom: 5px; font-family: var(--font-sans); }
+.field input, .field select { width: 100%; padding: 9px 12px; border: 1px solid #e0deda; border-radius: 8px; font-size: 13px; background: #fafaf8; color: #1a1a1a; font-family: var(--font-sans); outline: none; transition: border 0.15s; margin: 0; }
+.field input:focus, .field select:focus { border-color: #1a1a1a; background: #fff; }
+.fetch-row { display: flex; gap: 8px; align-items: flex-end; }
+.fetch-row .field { flex: 1; margin-bottom: 0; }
+.btn-fetch { padding: 9px 16px; font-size: 13px; font-weight: 500; background: #1a1a1a; color: #fff; border: none; border-radius: 8px; cursor: pointer; font-family: var(--font-sans); }
+.btn-fetch:hover { background: #333; }
+.status-pill { display: none; font-size: 12px; padding: 8px 12px; border-radius: 8px; margin-top: 10px; font-family: var(--font-sans); align-items: center; gap: 7px; }
+.status-pill.show { display: flex; }
+.status-pill.info { background: #eff6ff; color: #2563eb; }
+.status-pill.success { background: #f0fdf4; color: #16a34a; }
+.status-pill.error { background: #fef2f2; color: #dc2626; }
+.status-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; background: currentColor; }
+.doc-list-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.doc-list-label { font-size: 11px; font-weight: 500; color: #888; letter-spacing: 0.06em; text-transform: uppercase; font-family: var(--font-sans); }
+.sel-links { display: flex; gap: 10px; }
+.sel-link { font-size: 12px; color: #888; cursor: pointer; background: none; border: none; padding: 0; text-decoration: underline; font-family: var(--font-sans); }
+.sel-link:hover { color: #1a1a1a; }
+.doc-scroll { max-height: 220px; overflow-y: auto; margin-bottom: 1rem; }
+.doc-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px; cursor: pointer; border: 1px solid transparent; margin-bottom: 3px; }
+.doc-item:hover { background: #f5f4f0; }
+.doc-item.selected { background: #f0f9ff; border-color: #bae0fd; }
+.doc-item input[type=checkbox] { width: auto; margin: 0; flex-shrink: 0; accent-color: #1a1a1a; }
+.doc-name { font-size: 13px; color: #1a1a1a; font-family: var(--font-sans); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; }
+.doc-date { font-size: 11px; color: #bbb; flex-shrink: 0; }
+.divider { border: none; border-top: 1px solid #f0ede8; margin: 1rem 0; }
+.opts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 1.25rem; }
+.opt-card { border: 1px solid #e8e6e0; border-radius: 10px; padding: 10px 12px; cursor: pointer; background: #fafaf8; }
+.opt-card:hover { background: #f5f4f0; }
+.opt-card.active { border-color: #1a1a1a; background: #fff; }
+.opt-check { width: 14px; height: 14px; border-radius: 4px; border: 1px solid #d0cdc8; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 6px; }
+.opt-card.active .opt-check { background: #1a1a1a; border-color: #1a1a1a; }
+.opt-card.active .opt-check::after { content: ''; width: 7px; height: 4px; border-left: 1.5px solid #fff; border-bottom: 1.5px solid #fff; transform: rotate(-45deg) translateY(-1px); display: block; }
+.opt-label { font-size: 12px; font-weight: 500; color: #1a1a1a; font-family: var(--font-sans); display: block; margin-bottom: 2px; }
+.opt-desc { font-size: 11px; color: #aaa; font-family: var(--font-sans); }
+.btn-export { width: 100%; padding: 11px; font-size: 14px; font-weight: 500; background: #1a1a1a; color: #fff; border: none; border-radius: 10px; cursor: pointer; font-family: var(--font-sans); display: flex; align-items: center; justify-content: center; gap: 8px; }
+.btn-export:hover { background: #333; }
+.btn-export:disabled { background: #d0cdc8; cursor: not-allowed; }
+</style>
+</head>
+<body>
+<div class="page">
+<div class="logo-row">
+  <div class="logo-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 1.5L18.5 9H13V3.5zM6 20V4h5v7h7v9H6z"/></svg></div>
+  <div><div class="logo-text">Outline Exporter</div><div class="logo-sub">Export wiki ke Word (.docx)</div></div>
+</div>
+
+<div class="card">
+  <div class="card-title">Koneksi</div>
+  <div class="field"><label>Outline URL</label><input type="text" id="outlineUrl" placeholder="https://your-outline-instance.com"/></div>
+  <div class="field"><label>API Token</label><input type="password" id="apiToken" placeholder="ol_api_xxxxxxxxxxxx"/></div>
+  <div class="fetch-row">
+    <div class="field"><label>Collection</label><select id="collectionSelect"><option value="">— Semua dokumen —</option></select></div>
+    <button class="btn-fetch" onclick="fetchDocs()">Fetch</button>
+  </div>
+  <div class="status-pill info show" id="statusConnect"><span class="status-dot"></span><span id="scMsg">Masukkan URL dan token, lalu klik Fetch.</span></div>
+</div>
+
+<div class="card" id="docListCard" style="display:none">
+  <div class="doc-list-header">
+    <span class="doc-list-label">Dokumen</span>
+    <div class="sel-links"><button class="sel-link" onclick="selectAll(true)">Pilih semua</button><button class="sel-link" onclick="selectAll(false)">Hapus</button></div>
+  </div>
+  <div class="doc-scroll" id="docList"></div>
+  <div class="divider"></div>
+
+  <div class="opts-grid">
+    <div class="opt-card" id="opt-date" onclick="toggleOpt('date')"><div class="opt-check"></div><span class="opt-label">Tanggal</span><span class="opt-desc">Footer tanggal export</span></div>
+    <div class="opt-card" id="opt-merge" onclick="toggleOpt('merge')"><div class="opt-check"></div><span class="opt-label">Gabung</span><span class="opt-desc">1 file untuk semua</span></div>
+  </div>
+
+  <button class="btn-export" id="btnExport" onclick="exportDocs()" disabled>
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    Export ke Word (.docx)
+  </button>
+  <div class="status-pill" id="statusExport"><span class="status-dot"></span><span id="seMsg"></span></div>
+</div>
+</div>
+
+<script>
+let fetchedDocs = [], selectedIds = new Set();
+const opts = { date: false, merge: false };
+
+function toggleOpt(k) {
+  opts[k] = !opts[k];
+  document.getElementById('opt-' + k).classList.toggle('active', opts[k]);
+}
+
+function setStatus(id, type, msg) {
+  const el = document.getElementById(id);
+  el.className = 'status-pill show ' + type;
+  document.getElementById(id === 'statusConnect' ? 'scMsg' : 'seMsg').textContent = msg;
+}
+
+function getBase() { return document.getElementById('outlineUrl').value.trim().replace(/\/$/, ''); }
+function getToken() { return document.getElementById('apiToken').value.trim(); }
+
+// All API calls now go through our Node.js proxy server — no CORS issues
+async function serverPost(path, body) {
+  const res = await fetch(path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ outlineUrl: getBase(), apiToken: getToken(), ...body }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'HTTP ' + res.status);
+  }
+  return res;
+}
+
+async function fetchDocs() {
+  if (!getBase() || !getToken()) {
+    setStatus('statusConnect', 'error', 'URL dan API Token wajib diisi.');
+    return;
+  }
+  setStatus('statusConnect', 'info', 'Menghubungkan...');
+  try {
+    const cRes = await serverPost('/api/collections.list', {});
+    const c = await cRes.json();
+    const sel = document.getElementById('collectionSelect');
+    sel.innerHTML = '<option value="">— Semua dokumen —</option>';
+    (c.data || []).forEach(x => {
+      const o = document.createElement('option');
+      o.value = x.id; o.textContent = x.name;
+      sel.appendChild(o);
+    });
+    await loadDocs();
+  } catch (e) {
+    setStatus('statusConnect', 'error', e.message);
+  }
+}
+
+async function loadDocs() {
+  const cid = document.getElementById('collectionSelect').value;
+  setStatus('statusConnect', 'info', 'Mengambil semua dokumen...');
+  try {
+    const res = await serverPost('/api/documents.list', cid ? { collectionId: cid } : {});
+    const d = await res.json();
+    fetchedDocs = d.data || [];
+    renderList();
+    setStatus('statusConnect', 'success', fetchedDocs.length + ' dokumen ditemukan.');
+  } catch (e) {
+    setStatus('statusConnect', 'error', e.message);
+  }
+}
+
+document.getElementById('collectionSelect').addEventListener('change', () => {
+  if (getBase() && getToken()) loadDocs().catch(() => {});
+});
+
+function renderList() {
+  const list = document.getElementById('docList');
+  document.getElementById('docListCard').style.display = 'block';
+  selectedIds.clear();
+  if (!fetchedDocs.length) {
+    list.innerHTML = '<p style="text-align:center;padding:1.5rem;font-size:13px;color:#aaa">Tidak ada dokumen.</p>';
+    updateBtn(); return;
+  }
+  list.innerHTML = '';
+  fetchedDocs.forEach(doc => {
+    const el = document.createElement('div');
+    el.className = 'doc-item'; el.dataset.id = doc.id;
+    const d = doc.updatedAt
+      ? new Date(doc.updatedAt).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: '2-digit' })
+      : '';
+    el.innerHTML = '<input type="checkbox" data-id="' + doc.id + '" onchange="toggle(\'' + doc.id + '\',this.checked)">'
+      + '<span class="doc-name">' + (doc.title || 'Untitled') + '</span>'
+      + '<span class="doc-date">' + d + '</span>';
+    list.appendChild(el);
+  });
+  updateBtn();
+}
+
+function toggle(id, checked) {
+  checked ? selectedIds.add(id) : selectedIds.delete(id);
+  document.querySelector('.doc-item[data-id="' + id + '"]')?.classList.toggle('selected', checked);
+  updateBtn();
+}
+function selectAll(val) {
+  fetchedDocs.forEach(doc => {
+    val ? selectedIds.add(doc.id) : selectedIds.delete(doc.id);
+    const cb = document.querySelector('input[data-id="' + doc.id + '"]');
+    if (cb) cb.checked = val;
+    document.querySelector('.doc-item[data-id="' + doc.id + '"]')?.classList.toggle('selected', val);
+  });
+  updateBtn();
+}
+function updateBtn() {
+  const btn = document.getElementById('btnExport');
+  btn.disabled = selectedIds.size === 0;
+  btn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> '
+    + (selectedIds.size > 0 ? 'Export ' + selectedIds.size + ' dokumen' : 'Export ke Word (.docx)');
+}
+
+async function exportDocs() {
+  const ids = [...selectedIds];
+  document.getElementById('btnExport').disabled = true;
+  setStatus('statusExport', 'info', 'Memproses ' + ids.length + ' dokumen di server...');
+  try {
+    const res = await serverPost('/api/documents.export', { ids, opts });
+    if (!res.ok) throw new Error('Export gagal');
+
+    const contentDisposition = res.headers.get('Content-Disposition') || '';
+    const filenameMatch = contentDisposition.match(/filename="([^"]+)"/);
+    const filename = filenameMatch ? filenameMatch[1] : 'outline-export.docx';
+
+    const blob = await res.blob();
+    const a = Object.assign(document.createElement('a'), {
+      href: URL.createObjectURL(blob),
+      download: filename,
+    });
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+
+    const isZip = filename.endsWith('.zip');
+    setStatus('statusExport', 'success',
+      isZip
+        ? ids.length + ' file Word berhasil didownload sebagai ZIP!'
+        : 'File Word berhasil didownload!');
+  } catch (e) {
+    setStatus('statusExport', 'error', 'Gagal: ' + (e.message || 'Unknown error'));
+  }
+  updateBtn();
+}
+</script>
+</body>
+</html>
